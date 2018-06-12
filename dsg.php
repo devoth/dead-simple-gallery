@@ -24,7 +24,7 @@ if ( basename(__FILE__) == basename($_SERVER['PHP_SELF']) ) exit('Direct access 
  * * highly customizable pagination
  *
  * @author Devoth - Łukasz Mazurek - http://www.devoth.com/
- * @version 2.0.0
+ * @version 2.1.0
  * @copyright Devoth Design, 21 April, 2012
  **/
 
@@ -104,6 +104,10 @@ else if ($dsg_thumb_operation != 'scale') {
 // set up default thumbnail compression
 if ( ! isset($dsg_compression) ) {
   $dsg_compression = 80;
+}
+
+if ( ! isset($dsg_order)) {
+  $dsg_order = 'alphabetical';
 }
 
 // user can force refresh to recreate thumbnails on each page refresh
@@ -221,6 +225,7 @@ $dsg_config['thumb_width'] = $dsg_thumb_width;
 $dsg_config['thumb_height'] = $dsg_thumb_height;
 $dsg_config['thumb_operation'] = $dsg_thumb_operation;
 $dsg_config['compression'] = $dsg_compression;
+$dsg_config['order'] = $dsg_order;
 $dsg_config['force_refresh'] = $dsg_force_refresh;
 $dsg_config['filename_delimiter'] = $dsg_filename_delimiter;
 $dsg_config['line_output_pattern'] = $dsg_line_pattern;
@@ -385,7 +390,6 @@ function dsgGetImages ($config) {
     throw new Exception('Sorry, no images at the moment');
   }
 
-  sort($image_files);
   $images_data = array();
   foreach ($image_files as $key => $image_file)
   {
@@ -405,6 +409,8 @@ function dsgGetImages ($config) {
     $image_data['sizey'] = $size[1]; // height
     $image_data['mime'] = $size['mime']; // mime (mime type)
     $image_data['type'] = $size[2]; // type
+    $image_data['filemtime'] = filemtime($fullpath); // file modification time
+    $image_data['filectime'] = filectime($fullpath); // file creation time
     $image_data['exif'] = function_exists('exif_read_data') ? @exif_read_data($fullpath) : null; // exif data
     $image_data['abs_counter'] = $key + 1; // absolute counter
 
@@ -414,6 +420,51 @@ function dsgGetImages ($config) {
   }
 
   return $images_data;
+}
+endif;
+
+if( ! function_exists('dsgSortImages')):
+/**
+ * Sorts an array of images by alphabetical, numerical,
+ * file creation or modification order
+ *
+ * @return array Returns sorted array of images
+ * @author Devoth
+ **/
+function dsgSortImages($image_files, $config) {
+
+  switch ($config['order']) {
+    case 'alphabetical|desc':
+      function sort_func($a, $b) { return -strcmp($a['filename'], $b['filename']); }
+      break;
+    case 'creation':
+    case 'creation|asc':
+      function sort_func($a, $b) { return $a['filectime'] - $b['filectime']; }
+      break;
+    case 'creation|desc':
+      function sort_func($a, $b) { return $b['filectime'] - $a['filectime']; }
+      break;
+    case 'modification':
+    case 'modification|asc':
+      function sort_func($a, $b) { return $a['filemtime'] - $b['filemtime']; }
+      break;
+    case 'modification|desc':
+      function sort_func($a, $b) { return $b['filemtime'] - $a['filemtime']; }
+      break;
+    case 'numerical':
+    case 'numerical|asc':
+      function sort_func($a, $b) { return $a['filename'] - $b['filename']; }
+      break;
+    case 'numerical|desc':
+      function sort_func($a, $b) { return $b['filename'] - $a['filename']; }
+      break;
+    default:
+      function sort_func($a, $b) { return strcmp($a['filename'], $b['filename']); }
+      break;
+  }
+
+  usort($image_files, 'sort_func');
+  return $image_files;
 }
 endif;
 
@@ -1113,6 +1164,8 @@ try {
 
   // get images
   $dsg_images = dsgGetImages( $dsg_config );
+
+  $dsg_images = dsgSortImages($dsg_images, $dsg_config);
 
   // check if images dir is writable
   if ( ! is_writable($dsg_gallery_dir) ) {
