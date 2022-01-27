@@ -435,35 +435,34 @@ function dsgSortImages($image_files, $config) {
 
   switch ($config['order']) {
     case 'alphabetical|desc':
-      function sort_func($a, $b) { return -strcmp($a['filename'], $b['filename']); }
+      usort($image_files, function ($a, $b) { return -strcmp($a['filename'], $b['filename']); });
       break;
     case 'creation':
     case 'creation|asc':
-      function sort_func($a, $b) { return $a['filectime'] - $b['filectime']; }
+      usort($image_files, function ($a, $b) { return $a['filectime'] - $b['filectime']; });
       break;
     case 'creation|desc':
-      function sort_func($a, $b) { return $b['filectime'] - $a['filectime']; }
+      usort($image_files, function ($a, $b) { return $b['filectime'] - $a['filectime']; });
       break;
     case 'modification':
     case 'modification|asc':
-      function sort_func($a, $b) { return $a['filemtime'] - $b['filemtime']; }
+      usort($image_files, function ($a, $b) { return $a['filemtime'] - $b['filemtime']; });
       break;
     case 'modification|desc':
-      function sort_func($a, $b) { return $b['filemtime'] - $a['filemtime']; }
+      usort($image_files, function ($a, $b) { return $b['filemtime'] - $a['filemtime']; });
       break;
     case 'numerical':
     case 'numerical|asc':
-      function sort_func($a, $b) { return $a['filename'] - $b['filename']; }
+      usort($image_files, function ($a, $b) { return $a['filename'] - $b['filename']; });
       break;
     case 'numerical|desc':
-      function sort_func($a, $b) { return $b['filename'] - $a['filename']; }
+      usort($image_files, function ($a, $b) { return $b['filename'] - $a['filename']; });
       break;
     default:
-      function sort_func($a, $b) { return strcmp($a['filename'], $b['filename']); }
+      usort($image_files, function ($a, $b) { return strcmp($a['filename'], $b['filename']); });
       break;
   }
 
-  usort($image_files, 'sort_func');
   return $image_files;
 }
 endif;
